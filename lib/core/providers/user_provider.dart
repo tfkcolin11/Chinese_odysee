@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chinese_odysee/core/models/models.dart';
 import 'package:chinese_odysee/core/providers/api_providers.dart';
+import 'package:chinese_odysee/core/services/api/user_service.dart';
 
 /// Provider for the current user
 final currentUserProvider = StateNotifierProvider<CurrentUserNotifier, AsyncValue<User?>>((ref) {

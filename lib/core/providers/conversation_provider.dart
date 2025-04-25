@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chinese_odysee/core/models/models.dart';
 import 'package:chinese_odysee/core/providers/api_providers.dart';
+import 'package:chinese_odysee/core/services/api/conversation_service.dart';
 
 /// Provider for the active conversation
 final activeConversationProvider = StateNotifierProvider<ActiveConversationNotifier, AsyncValue<Conversation?>>((ref) {
