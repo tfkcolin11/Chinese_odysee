@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chinese_odysee/core/models/models.dart';
 import 'package:chinese_odysee/core/providers/providers.dart';
 import 'package:chinese_odysee/ui/widgets/widgets.dart';
+import 'package:chinese_odysee/utils/logger.dart';
+import 'package:chinese_odysee/utils/permission_handler.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -10,10 +12,10 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 class ConversationScreen extends ConsumerStatefulWidget {
   /// The initial AI turn
   final ConversationTurn initialTurn;
-  
+
   /// The selected HSK level
   final HskLevel hskLevel;
-  
+
   /// The selected scenario
   final Scenario scenario;
 
@@ -35,7 +37,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final List<ConversationTurn> _turns = [];
   final FlutterTts _flutterTts = FlutterTts();
   final stt.SpeechToText _speech = stt.SpeechToText();
-  
+
   bool _isListening = false;
   bool _isSending = false;
   bool _ttsEnabled = true;
@@ -48,7 +50,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     _turns.add(widget.initialTurn);
     _initializeTts();
     _initializeSpeech();
-    
+
     // Speak the initial AI message
     if (_ttsEnabled) {
       _speakText(widget.initialTurn.aiResponseText ?? '');
@@ -64,10 +66,35 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   Future<void> _initializeTts() async {
-    await _flutterTts.setLanguage('zh-CN');
-    await _flutterTts.setSpeechRate(0.5);
-    await _flutterTts.setVolume(1.0);
-    await _flutterTts.setPitch(1.0);
+    try {
+      await _flutterTts.setLanguage('zh-CN');
+      await _flutterTts.setSpeechRate(0.5);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0);
+
+      // Add error listener
+      _flutterTts.setErrorHandler((error) {
+        Logger.error('TTS Error', error);
+        // Disable TTS if there's an error
+        setState(() {
+          _ttsEnabled = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Text-to-speech is not available. It has been disabled.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      Logger.error('Failed to initialize TTS', e);
+      setState(() {
+        _ttsEnabled = false;
+      });
+    }
   }
 
   Future<void> _initializeSpeech() async {
@@ -76,34 +103,73 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   Future<void> _speakText(String text) async {
     if (_ttsEnabled) {
-      await _flutterTts.speak(text);
+      try {
+        await _flutterTts.speak(text);
+      } catch (e) {
+        // If there's an error, disable TTS
+        setState(() {
+          _ttsEnabled = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to use text-to-speech: $e'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
     }
   }
 
   Future<void> _listen() async {
     if (!_isListening) {
-      bool available = await _speech.initialize();
-      if (available) {
-        setState(() {
-          _isListening = true;
-          _recognizedText = '';
-        });
-        
-        _speech.listen(
-          onResult: (result) {
-            setState(() {
-              _recognizedText = result.recognizedWords;
-            });
-          },
-          localeId: 'zh-CN',
-        );
+      try {
+        // Check microphone permission first
+        bool permissionGranted = await PermissionHandler.checkMicrophonePermission(context);
+        if (!permissionGranted) {
+          // If permission not granted, switch to text input
+          setState(() {
+            _inputMode = InputMode.text;
+          });
+          return;
+        }
+
+        bool available = await _speech.initialize();
+        if (available) {
+          setState(() {
+            _isListening = true;
+            _recognizedText = '';
+          });
+
+          _speech.listen(
+            onResult: (result) {
+              setState(() {
+                _recognizedText = result.recognizedWords;
+              });
+            },
+            localeId: 'zh-CN',
+          );
+
+          // Add error listener
+          _speech.errorListener = (error) {
+            _handleSpeechError(error.errorMsg);
+          };
+        } else {
+          Logger.warning('Speech recognition not available on this device');
+          _handleSpeechError('Speech recognition not available on this device');
+        }
+      } catch (e) {
+        Logger.error('Error initializing speech recognition', e);
+        _handleSpeechError('Error initializing speech recognition: $e');
       }
     } else {
       setState(() {
         _isListening = false;
       });
       _speech.stop();
-      
+
       // Show dialog to confirm the recognized text
       if (_recognizedText.isNotEmpty) {
         _showRecognizedTextDialog();
@@ -111,9 +177,35 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
+  void _handleSpeechError(String errorMessage) {
+    Logger.error('Speech recognition error', errorMessage);
+
+    setState(() {
+      _isListening = false;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Speech recognition error: $errorMessage'),
+          backgroundColor: Colors.red,
+          action: SnackBarAction(
+            label: 'Switch to Text',
+            onPressed: () {
+              setState(() {
+                _inputMode = InputMode.text;
+              });
+            },
+            textColor: Colors.white,
+          ),
+        ),
+      );
+    }
+  }
+
   void _showRecognizedTextDialog() {
     final textController = TextEditingController(text: _recognizedText);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -154,11 +246,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   Future<void> _sendMessage(String text, InputMode mode) async {
     if (text.isEmpty) return;
-    
+
     setState(() {
       _isSending = true;
     });
-    
+
     try {
       // Create a user turn
       final userTurn = ConversationTurn(
@@ -170,37 +262,37 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         inputMode: mode,
         userValidatedTranscript: text,
       );
-      
+
       // Add the user turn to the list
       setState(() {
         _turns.add(userTurn);
       });
-      
+
       // Clear the text field
       _textController.clear();
-      
+
       // Scroll to the bottom
       _scrollToBottom();
-      
+
       // Submit the user turn to the API
       final conversationNotifier = ref.read(activeConversationProvider.notifier);
       final result = await conversationNotifier.submitUserTurn(
         inputText: text,
         inputMode: mode,
       );
-      
+
       // Get the AI turn from the result
       final aiTurn = result['aiTurn'] as ConversationTurn;
-      
+
       // Add the AI turn to the list
       setState(() {
         _turns.add(aiTurn);
         _isSending = false;
       });
-      
+
       // Scroll to the bottom
       _scrollToBottom();
-      
+
       // Speak the AI response
       if (_ttsEnabled) {
         _speakText(aiTurn.aiResponseText ?? '');
@@ -209,7 +301,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       setState(() {
         _isSending = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -236,7 +328,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final conversation = ref.watch(activeConversationProvider);
-    
+
     return Scaffold(
       appBar: CustomAppBar(
         title: widget.scenario.name,
@@ -248,7 +340,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               setState(() {
                 _ttsEnabled = !_ttsEnabled;
               });
-              
+
               if (!_ttsEnabled) {
                 _flutterTts.stop();
               }
@@ -291,7 +383,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               ],
             ),
           ),
-          
+
           // Conversation messages
           Expanded(
             child: ListView.builder(
@@ -304,7 +396,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               },
             ),
           ),
-          
+
           // Input area
           _buildInputArea(),
         ],
@@ -314,7 +406,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   Widget _buildMessageBubble(ConversationTurn turn) {
     final isUser = turn.speaker == Speaker.user;
-    
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -350,8 +442,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: isUser
-                    ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.7)
-                    : Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.7),
+                    ? Theme.of(context).colorScheme.onPrimary.withAlpha(179) // ~0.7 opacity
+                    : Theme.of(context).colorScheme.onSecondaryContainer.withAlpha(179), // ~0.7 opacity
               ),
             ),
           ],
@@ -367,7 +459,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha(26), // ~0.1 opacity
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -391,7 +483,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 ? 'Switch to Voice Input'
                 : 'Switch to Text Input',
           ),
-          
+
           // Text input field (visible in text mode)
           if (_inputMode == InputMode.text)
             Expanded(
@@ -410,7 +502,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 onSubmitted: (text) => _sendMessage(text, InputMode.text),
               ),
             ),
-          
+
           // Voice input button (visible in voice mode)
           if (_inputMode == InputMode.voice)
             Expanded(
@@ -452,7 +544,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 ),
               ),
             ),
-          
+
           // Send button (visible in text mode)
           if (_inputMode == InputMode.text)
             IconButton(
@@ -511,7 +603,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   void _showSaveConversationDialog() {
     final nameController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -558,17 +650,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }) async {
     try {
       final conversationNotifier = ref.read(activeConversationProvider.notifier);
-      
+
       // Save the conversation if requested
       if (save && savedInstanceName != null) {
         await conversationNotifier.saveConversation(
           savedInstanceName: savedInstanceName,
         );
       }
-      
+
       // End the conversation
       await conversationNotifier.endConversation();
-      
+
       // Navigate back to the scenario selection screen
       if (mounted) {
         Navigator.popUntil(

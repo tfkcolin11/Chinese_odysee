@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speech recognition is used to convert your spoken words to text for communicating with the AI language partner.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is needed to record your voice for speech recognition.</string>
 </dict>
 </plist>
