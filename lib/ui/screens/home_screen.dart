@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:chinese_odysee/ui/screens/hsk_level_selection_screen.dart';
+import 'package:chinese_odysee/ui/screens/mastery/mastery_dashboard_screen.dart';
+import 'package:chinese_odysee/ui/screens/profile/profile_screen.dart';
 import 'package:chinese_odysee/ui/widgets/widgets.dart';
 
 /// Home screen of the application
@@ -69,11 +71,43 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {
-                  // TODO: Navigate to user profile or settings
-                },
-                child: const Text('My Profile'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MasteryDashboardScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.bar_chart),
+                    label: const Text('My Progress'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.person),
+                    label: const Text('My Profile'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

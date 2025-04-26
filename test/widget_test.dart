@@ -11,17 +11,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chinese_odysee/main.dart';
 
 void main() {
-  testWidgets('App renders correctly', (WidgetTester tester) async {
+  testWidgets('App renders login screen correctly', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const ProviderScope(child: ChineseOdyseeApp()));
 
-    // Verify that the app title is displayed.
+    // Verify that the login screen is displayed.
     expect(find.text('Chinese Odyssey'), findsOneWidget);
 
-    // Verify that the welcome message is displayed.
-    expect(find.text('Welcome to Chinese Odyssey'), findsOneWidget);
-
-    // Verify that the start button is displayed.
-    expect(find.text('Start Learning'), findsOneWidget);
+    // Verify that the login form elements are displayed.
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Don\'t have an account? Register'), findsOneWidget);
   });
 }
