@@ -97,7 +97,7 @@ class ScenarioRepository extends BaseRepository<Scenario> {
         // In offline mode, get scenarios from local storage
         String? whereClause;
         List<dynamic>? whereArgs;
-        
+
         if (type == ScenarioType.predefined) {
           whereClause = 'isPredefined = ? AND syncStatus != ?';
           whereArgs = [1, 'pending_delete'];
@@ -108,28 +108,28 @@ class ScenarioRepository extends BaseRepository<Scenario> {
           whereClause = 'syncStatus != ?';
           whereArgs = ['pending_delete'];
         }
-        
+
         final maps = await storageService.query(
           tableName,
           where: whereClause,
           whereArgs: whereArgs,
         );
-        
+
         return maps.map((map) => fromMap(map)).toList();
       } else {
         try {
           // Try to get scenarios from the API
           final scenarios = await _scenarioService.getScenarios(type: type);
-          
+
           // Save scenarios to local storage
-          await _saveAllLocal(scenarios);
-          
+          await saveAllLocal(scenarios);
+
           return scenarios;
         } catch (e) {
           // If API call fails, fall back to local storage
           String? whereClause;
           List<dynamic>? whereArgs;
-          
+
           if (type == ScenarioType.predefined) {
             whereClause = 'isPredefined = ? AND syncStatus != ?';
             whereArgs = [1, 'pending_delete'];
@@ -140,13 +140,13 @@ class ScenarioRepository extends BaseRepository<Scenario> {
             whereClause = 'syncStatus != ?';
             whereArgs = ['pending_delete'];
           }
-          
+
           final maps = await storageService.query(
             tableName,
             where: whereClause,
             whereArgs: whereArgs,
           );
-          
+
           return maps.map((map) => fromMap(map)).toList();
         }
       }
@@ -172,7 +172,7 @@ class ScenarioRepository extends BaseRepository<Scenario> {
         createdByUserId: 'local-user', // This would be the actual user ID in a real app
         createdAt: DateTime.now(),
       );
-      
+
       // Create the scenario
       return await create(scenario);
     } catch (e) {

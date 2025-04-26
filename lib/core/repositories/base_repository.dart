@@ -6,13 +6,13 @@ import 'package:sqflite/sqflite.dart';
 abstract class BaseRepository<T> {
   /// API service for remote operations
   final ApiService apiService;
-  
+
   /// Storage service for local operations
   final StorageService storageService;
-  
+
   /// Table name in the local database
   final String tableName;
-  
+
   /// Whether the repository is in offline mode
   bool _offlineMode = false;
 
@@ -254,19 +254,26 @@ abstract class BaseRepository<T> {
   }
 
   /// Saves an item to local storage
-  Future<void> _saveLocal(T item, {String syncStatus = 'synced'}) async {
+  /// This is protected (accessible to subclasses)
+  Future<void> saveLocal(T item, {String syncStatus = 'synced'}) async {
     try {
       final map = toMap(item);
       map['syncStatus'] = syncStatus;
-      
+
       await storageService.insert(tableName, map);
     } catch (e) {
       rethrow;
     }
   }
 
+  // Private alias for internal use
+  Future<void> _saveLocal(T item, {String syncStatus = 'synced'}) async {
+    return saveLocal(item, syncStatus: syncStatus);
+  }
+
   /// Saves multiple items to local storage
-  Future<void> _saveAllLocal(List<T> items) async {
+  /// This is protected (accessible to subclasses)
+  Future<void> saveAllLocal(List<T> items) async {
     try {
       batch(batch) {
         for (final item in items) {
@@ -279,11 +286,16 @@ abstract class BaseRepository<T> {
           );
         }
       }
-      
+
       await storageService.batch(batch);
     } catch (e) {
       rethrow;
     }
+  }
+
+  // Private alias for internal use
+  Future<void> _saveAllLocal(List<T> items) async {
+    return saveAllLocal(items);
   }
 
   /// Deletes an item from local storage

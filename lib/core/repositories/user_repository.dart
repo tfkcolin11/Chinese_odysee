@@ -112,10 +112,10 @@ class UserRepository extends BaseRepository<User> {
         try {
           // Try to get the user from the API
           final user = await _userService.getCurrentUser();
-          
+
           // Save the user to local storage
-          await _saveLocal(user);
-          
+          await saveLocal(user);
+
           return user;
         } catch (e) {
           // If API call fails, fall back to local storage
@@ -140,10 +140,10 @@ class UserRepository extends BaseRepository<User> {
       if (currentUser == null) {
         throw Exception('No user found');
       }
-      
+
       // Create an updated user with the new settings
       final updatedUser = currentUser.copyWith(settings: settings);
-      
+
       // Update the user
       return await update(updatedUser);
     } catch (e) {

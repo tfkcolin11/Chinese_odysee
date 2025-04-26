@@ -115,7 +115,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
       if (isOfflineMode) {
         // In offline mode, create a local conversation
         final conversationId = DateTime.now().millisecondsSinceEpoch.toString();
-        
+
         // Get the scenario name from local storage
         final scenarioMaps = await storageService.query(
           'Scenario',
@@ -123,11 +123,11 @@ class ConversationRepository extends BaseRepository<Conversation> {
           whereArgs: [scenarioId],
           limit: 1,
         );
-        
+
         final scenarioName = scenarioMaps.isNotEmpty
             ? scenarioMaps.first['name'] as String
             : 'Unknown Scenario';
-        
+
         // Create a new conversation
         final conversation = Conversation(
           conversationId: conversationId,
@@ -139,10 +139,10 @@ class ConversationRepository extends BaseRepository<Conversation> {
           currentScore: 100,
           outcomeStatus: ConversationStatus.pending,
         );
-        
+
         // Save the conversation to local storage
-        await _saveLocal(conversation, syncStatus: 'pending_create');
-        
+        await saveLocal(conversation, syncStatus: 'pending_create');
+
         // Create an initial AI turn
         final initialTurn = ConversationTurn(
           turnId: '${conversationId}_1',
@@ -152,7 +152,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
           speaker: Speaker.ai,
           aiResponseText: 'Welcome to the conversation! (Offline Mode)',
         );
-        
+
         // Save the turn to local storage
         await storageService.insert(
           'ConversationTurn',
@@ -166,7 +166,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
             'syncStatus': 'pending_create',
           },
         );
-        
+
         return {
           'conversation': conversation,
           'initialTurn': initialTurn,
@@ -179,11 +179,11 @@ class ConversationRepository extends BaseRepository<Conversation> {
             hskLevelPlayed: hskLevelPlayed,
             inspirationSavedInstanceId: inspirationSavedInstanceId,
           );
-          
+
           // Save the conversation to local storage
           final conversation = result['conversation'] as Conversation;
-          await _saveLocal(conversation);
-          
+          await saveLocal(conversation);
+
           // Save the initial turn to local storage
           final initialTurn = result['initialTurn'] as ConversationTurn;
           await storageService.insert(
@@ -198,7 +198,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
               'syncStatus': 'synced',
             },
           );
-          
+
           return result;
         } catch (e) {
           // If API call fails, fall back to offline mode
@@ -223,7 +223,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
     try {
       if (isOfflineMode) {
         // In offline mode, create a local user turn and AI response
-        
+
         // Get the current conversation
         final conversationMaps = await storageService.query(
           'Conversation',
@@ -231,13 +231,13 @@ class ConversationRepository extends BaseRepository<Conversation> {
           whereArgs: [conversationId],
           limit: 1,
         );
-        
+
         if (conversationMaps.isEmpty) {
           throw Exception('Conversation not found');
         }
-        
+
         final conversation = fromMap(conversationMaps.first);
-        
+
         // Get the latest turn number
         final turnMaps = await storageService.query(
           'ConversationTurn',
@@ -246,11 +246,11 @@ class ConversationRepository extends BaseRepository<Conversation> {
           orderBy: 'turnNumber DESC',
           limit: 1,
         );
-        
+
         final latestTurnNumber = turnMaps.isNotEmpty
             ? turnMaps.first['turnNumber'] as int
             : 0;
-        
+
         // Create a user turn
         final userTurn = ConversationTurn(
           turnId: '${conversationId}_${latestTurnNumber + 1}',
@@ -261,7 +261,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
           inputMode: inputMode,
           userValidatedTranscript: inputText,
         );
-        
+
         // Save the user turn to local storage
         await storageService.insert(
           'ConversationTurn',
@@ -276,7 +276,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
             'syncStatus': 'pending_create',
           },
         );
-        
+
         // Create a simple AI response (in a real app, this would use a local model)
         final aiTurn = ConversationTurn(
           turnId: '${conversationId}_${latestTurnNumber + 2}',
@@ -286,7 +286,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
           speaker: Speaker.ai,
           aiResponseText: _getOfflineAiResponse(inputText),
         );
-        
+
         // Save the AI turn to local storage
         await storageService.insert(
           'ConversationTurn',
@@ -300,16 +300,16 @@ class ConversationRepository extends BaseRepository<Conversation> {
             'syncStatus': 'pending_create',
           },
         );
-        
+
         // Update the conversation score
         final newScore = conversation.currentScore - 5;
         final updatedConversation = conversation.copyWith(
           currentScore: newScore > 0 ? newScore : 0,
         );
-        
+
         // Save the updated conversation
-        await _saveLocal(updatedConversation, syncStatus: 'pending_update');
-        
+        await saveLocal(updatedConversation, syncStatus: 'pending_update');
+
         return {
           'aiTurn': aiTurn,
           'userTurnFeedback': {
@@ -328,13 +328,13 @@ class ConversationRepository extends BaseRepository<Conversation> {
             inputText: inputText,
             inputMode: inputMode,
           );
-          
+
           // Save the user turn and AI response to local storage
           final aiTurn = result['aiTurn'] as ConversationTurn;
-          
+
           // Get the user turn number
           final userTurnNumber = aiTurn.turnNumber - 1;
-          
+
           // Save the user turn
           await storageService.insert(
             'ConversationTurn',
@@ -349,7 +349,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
               'syncStatus': 'synced',
             },
           );
-          
+
           // Save the AI turn
           await storageService.insert(
             'ConversationTurn',
@@ -363,10 +363,10 @@ class ConversationRepository extends BaseRepository<Conversation> {
               'syncStatus': 'synced',
             },
           );
-          
+
           // Update the conversation score
           final updatedScore = result['updatedConversationScore'] as int;
-          
+
           // Get the current conversation
           final conversationMaps = await storageService.query(
             'Conversation',
@@ -374,17 +374,17 @@ class ConversationRepository extends BaseRepository<Conversation> {
             whereArgs: [conversationId],
             limit: 1,
           );
-          
+
           if (conversationMaps.isNotEmpty) {
             final conversation = fromMap(conversationMaps.first);
             final updatedConversation = conversation.copyWith(
               currentScore: updatedScore,
             );
-            
+
             // Save the updated conversation
-            await _saveLocal(updatedConversation);
+            await saveLocal(updatedConversation);
           }
-          
+
           return result;
         } catch (e) {
           // If API call fails, fall back to offline mode
@@ -412,13 +412,13 @@ class ConversationRepository extends BaseRepository<Conversation> {
           whereArgs: [conversationId],
           orderBy: 'turnNumber ASC',
         );
-        
+
         return maps.map((map) => _turnFromMap(map)).toList();
       } else {
         try {
           // Try to get turns from the API
           final turns = await _conversationService.getConversationTurns(conversationId);
-          
+
           // Save turns to local storage
           for (final turn in turns) {
             await storageService.insert(
@@ -426,7 +426,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
               _turnToMap(turn),
             );
           }
-          
+
           return turns;
         } catch (e) {
           // If API call fails, fall back to local storage
@@ -436,7 +436,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
             whereArgs: [conversationId],
             orderBy: 'turnNumber ASC',
           );
-          
+
           return maps.map((map) => _turnFromMap(map)).toList();
         }
       }
@@ -456,30 +456,30 @@ class ConversationRepository extends BaseRepository<Conversation> {
           whereArgs: [conversationId],
           limit: 1,
         );
-        
+
         if (maps.isEmpty) {
           throw Exception('Conversation not found');
         }
-        
+
         final conversation = fromMap(maps.first);
         final updatedConversation = conversation.copyWith(
           endedAt: DateTime.now(),
           finalScore: conversation.currentScore,
           outcomeStatus: ConversationStatus.achieved,
         );
-        
+
         // Save the updated conversation
-        await _saveLocal(updatedConversation, syncStatus: 'pending_update');
-        
+        await saveLocal(updatedConversation, syncStatus: 'pending_update');
+
         return updatedConversation;
       } else {
         try {
           // Try to end the conversation via the API
           final endedConversation = await _conversationService.endConversation(conversationId);
-          
+
           // Save the updated conversation
-          await _saveLocal(endedConversation);
-          
+          await saveLocal(endedConversation);
+
           return endedConversation;
         } catch (e) {
           // If API call fails, fall back to offline mode
@@ -506,24 +506,24 @@ class ConversationRepository extends BaseRepository<Conversation> {
           whereArgs: [conversationId],
           limit: 1,
         );
-        
+
         if (maps.isEmpty) {
           throw Exception('Conversation not found');
         }
-        
+
         final conversation = fromMap(maps.first);
         final savedInstanceDetails = {
           'name': savedInstanceName ?? 'Saved Conversation',
           'savedAt': DateTime.now().toIso8601String(),
         };
-        
+
         final updatedConversation = conversation.copyWith(
           savedInstanceDetails: savedInstanceDetails,
         );
-        
+
         // Save the updated conversation
-        await _saveLocal(updatedConversation, syncStatus: 'pending_update');
-        
+        await saveLocal(updatedConversation, syncStatus: 'pending_update');
+
         return updatedConversation;
       } else {
         try {
@@ -532,10 +532,10 @@ class ConversationRepository extends BaseRepository<Conversation> {
             conversationId: conversationId,
             savedInstanceName: savedInstanceName,
           );
-          
+
           // Save the updated conversation
-          await _saveLocal(savedConversation);
-          
+          await saveLocal(savedConversation);
+
           return savedConversation;
         } catch (e) {
           // If API call fails, fall back to offline mode
@@ -554,7 +554,7 @@ class ConversationRepository extends BaseRepository<Conversation> {
   /// Gets a simple AI response for offline mode
   String _getOfflineAiResponse(String userInput) {
     final input = userInput.toLowerCase();
-    
+
     if (input.contains('你好') || input.contains('hello')) {
       return '你好！很高兴认识你。你叫什么名字？';
     } else if (input.contains('名字') || input.contains('叫')) {
