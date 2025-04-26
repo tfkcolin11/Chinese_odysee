@@ -125,20 +125,76 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // App preferences section
                   _buildSectionHeader(context, 'App Preferences'),
                   const SizedBox(height: 8),
-                  
-                  // Dark mode toggle
-                  _buildSwitchTile(
-                    title: 'Dark Mode',
-                    subtitle: 'Enable dark theme for the app',
-                    value: _darkModeEnabled,
-                    onChanged: (value) {
-                      setState(() {
-                        _darkModeEnabled = value;
-                      });
-                    },
-                    icon: Icons.dark_mode,
+
+                  // Theme mode selector
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.color_lens),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'App Theme',
+                                      style: Theme.of(context).textTheme.titleMedium,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Choose between light and dark theme',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final themeMode = ref.watch(themeModeProvider);
+                                  return DropdownButton<ThemeMode>(
+                                    value: themeMode,
+                                    onChanged: (ThemeMode? newValue) {
+                                      if (newValue != null) {
+                                        ref.read(themeModeProvider.notifier).setThemeMode(newValue);
+                                        setState(() {
+                                          _darkModeEnabled = newValue == ThemeMode.dark;
+                                        });
+                                      }
+                                    },
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: ThemeMode.system,
+                                        child: Text('System'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: ThemeMode.light,
+                                        child: Text('Light'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: ThemeMode.dark,
+                                        child: Text('Dark'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Center(
+                            child: ThemeToggleButton(showLabel: true),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  
+
                   // Language selector
                   _buildDropdownTile(
                     title: 'App Language',
@@ -154,7 +210,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                     icon: Icons.language,
                   ),
-                  
+
                   // Notifications toggle
                   _buildSwitchTile(
                     title: 'Notifications',
@@ -167,13 +223,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                     icon: Icons.notifications,
                   ),
-                  
+
                   const Divider(height: 32),
-                  
+
                   // Learning preferences section
                   _buildSectionHeader(context, 'Learning Preferences'),
                   const SizedBox(height: 8),
-                  
+
                   // Text-to-speech toggle
                   _buildSwitchTile(
                     title: 'Text-to-Speech',
@@ -186,7 +242,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                     icon: Icons.record_voice_over,
                   ),
-                  
+
                   // Input mode selector
                   _buildRadioTile(
                     title: 'Preferred Input Mode',
@@ -205,13 +261,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                     icon: Icons.keyboard_voice,
                   ),
-                  
+
                   const Divider(height: 32),
-                  
+
                   // Account section
                   _buildSectionHeader(context, 'Account'),
                   const SizedBox(height: 8),
-                  
+
                   // Edit profile button
                   ListTile(
                     leading: const Icon(Icons.person),
@@ -222,7 +278,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       // TODO: Navigate to edit profile screen
                     },
                   ),
-                  
+
                   // Change password button
                   ListTile(
                     leading: const Icon(Icons.lock),
@@ -233,9 +289,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       // TODO: Navigate to change password screen
                     },
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Save button
                   SizedBox(
                     width: double.infinity,

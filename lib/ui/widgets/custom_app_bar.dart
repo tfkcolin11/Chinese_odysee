@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:chinese_odysee/ui/theme/app_theme.dart';
+import 'package:chinese_odysee/ui/widgets/theme_toggle_button.dart';
 
 /// Custom app bar widget
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -42,10 +43,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Create a list of actions that includes the theme toggle button
+    final List<Widget> allActions = [
+      const ThemeToggleButton(small: true),
+      if (actions != null) ...actions!,
+    ];
+
     return AppBar(
       title: Text(title),
       leading: leading,
-      actions: actions,
+      actions: allActions,
       centerTitle: centerTitle,
       backgroundColor: backgroundColor ?? AppTheme.primaryColor,
       foregroundColor: foregroundColor ?? Colors.white,

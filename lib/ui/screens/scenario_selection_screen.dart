@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chinese_odysee/core/models/models.dart';
 import 'package:chinese_odysee/core/providers/providers.dart';
 import 'package:chinese_odysee/core/services/api/api_services.dart';
+import 'package:chinese_odysee/ui/animations/animations.dart';
 import 'package:chinese_odysee/ui/screens/conversation_screen.dart';
 import 'package:chinese_odysee/ui/widgets/widgets.dart';
 
@@ -93,61 +94,10 @@ class ScenarioSelectionScreen extends ConsumerWidget {
     WidgetRef ref,
     Scenario scenario,
   ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () => _startConversation(context, ref, scenario),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      scenario.name,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  if (scenario.isPredefined)
-                    const Chip(
-                      label: Text('Predefined'),
-                      backgroundColor: Colors.blue,
-                      labelStyle: TextStyle(color: Colors.white),
-                    )
-                  else
-                    const Chip(
-                      label: Text('Custom'),
-                      backgroundColor: Colors.green,
-                      labelStyle: TextStyle(color: Colors.white),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                scenario.description,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Created: ${_formatDate(scenario.createdAt)}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  if (scenario.lastUsedAt != null)
-                    Text(
-                      'Last used: ${_formatDate(scenario.lastUsedAt!)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    return AnimatedScenarioCard(
+      scenario: scenario,
+      hskLevel: hskLevel,
+      onSelected: (selectedScenario) => _startConversation(context, ref, selectedScenario),
     );
   }
 
@@ -307,7 +257,7 @@ class ScenarioSelectionScreen extends ConsumerWidget {
       );
 
       // Refresh the scenarios list
-      ref.refresh(scenariosProvider(ScenarioType.all));
+      final _ = ref.refresh(scenariosProvider(ScenarioType.all));
 
       // Close loading dialog and show success message
       if (context.mounted) {
@@ -333,7 +283,5 @@ class ScenarioSelectionScreen extends ConsumerWidget {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+
 }

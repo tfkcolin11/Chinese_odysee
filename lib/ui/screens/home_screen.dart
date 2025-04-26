@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chinese_odysee/ui/animations/animations.dart';
 import 'package:chinese_odysee/ui/screens/hsk_level_selection_screen.dart';
 import 'package:chinese_odysee/ui/screens/mastery/mastery_dashboard_screen.dart';
 import 'package:chinese_odysee/ui/screens/profile/profile_screen.dart';
@@ -52,11 +53,9 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 40),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HskLevelSelectionScreen(),
-                    ),
+                  context.navigateWithTransition(
+                    const HskLevelSelectionScreen(),
+                    type: PageTransitionType.fadeAndScale,
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -76,11 +75,9 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MasteryDashboardScreen(),
-                        ),
+                      context.navigateWithTransition(
+                        const MasteryDashboardScreen(),
+                        type: PageTransitionType.slideBottom,
                       );
                     },
                     icon: const Icon(Icons.bar_chart),
@@ -93,11 +90,9 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(width: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
-                        ),
+                      context.navigateWithTransition(
+                        const ProfileScreen(),
+                        type: PageTransitionType.slideRight,
                       );
                     },
                     icon: const Icon(Icons.person),

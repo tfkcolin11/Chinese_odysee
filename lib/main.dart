@@ -40,11 +40,14 @@ class ChineseOdyseeApp extends ConsumerWidget {
     // Watch the auth state to determine the initial screen
     final authState = ref.watch(authStateProvider);
 
+    // Watch the theme mode
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp(
       title: 'Chinese Odyssey',
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
-      themeMode: ThemeMode.system, // Use system theme by default
+      themeMode: themeMode,
       builder: (context, child) {
         return Column(
           children: [
