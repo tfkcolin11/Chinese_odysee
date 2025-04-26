@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chinese_odysee/core/models/models.dart';
 import 'package:chinese_odysee/core/providers/providers.dart';
 import 'package:chinese_odysee/core/services/api/api_services.dart';
+import 'package:chinese_odysee/core/services/subscription/subscription_service.dart';
 import 'package:chinese_odysee/ui/animations/animations.dart';
 import 'package:chinese_odysee/ui/screens/conversation_screen.dart';
+import 'package:chinese_odysee/ui/screens/pre_learning_screen.dart';
+import 'package:chinese_odysee/ui/screens/subscription_screen.dart';
 import 'package:chinese_odysee/ui/widgets/widgets.dart';
 
 /// Screen for selecting a scenario
@@ -106,6 +109,53 @@ class ScenarioSelectionScreen extends ConsumerWidget {
     WidgetRef ref,
     Scenario scenario,
   ) async {
+    // Show options dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Start Learning'),
+        content: const Text(
+          'Would you like to review vocabulary and grammar for this scenario before starting the conversation?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _startDirectConversation(context, ref, scenario);
+            },
+            child: const Text('Start Conversation'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _navigateToPreLearning(context, scenario);
+            },
+            child: const Text('Learn & Practice First'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToPreLearning(BuildContext context, Scenario scenario) {
+    // Check if the user has access to pre-learning
+    // This would normally be done through the subscription provider
+    // For now, we'll just navigate to the pre-learning screen
+
+    context.navigateWithTransition(
+      PreLearningScreen(
+        scenario: scenario,
+        hskLevel: hskLevel,
+      ),
+      type: PageTransitionType.fadeAndScale,
+    );
+  }
+
+  void _startDirectConversation(
+    BuildContext context,
+    WidgetRef ref,
+    Scenario scenario,
+  ) async {
     // Show loading dialog
     showDialog(
       context: context,
@@ -133,15 +183,13 @@ class ScenarioSelectionScreen extends ConsumerWidget {
       // Close loading dialog and navigate to conversation screen
       if (context.mounted) {
         Navigator.pop(context); // Close loading dialog
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ConversationScreen(
-              initialTurn: initialTurn,
-              hskLevel: hskLevel,
-              scenario: scenario,
-            ),
+        context.navigateWithTransition(
+          ConversationScreen(
+            initialTurn: initialTurn,
+            hskLevel: hskLevel,
+            scenario: scenario,
           ),
+          type: PageTransitionType.fadeAndScale,
         );
       }
     } catch (e) {

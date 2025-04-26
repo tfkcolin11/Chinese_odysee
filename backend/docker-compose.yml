@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: chinese-odyssey-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chinese_odyssey
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - chinese-odyssey-network
+
+  redis:
+    image: redis:alpine
+    container_name: chinese-odyssey-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - chinese-odyssey-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: chinese-odyssey-api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=chinese_odyssey
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=your_jwt_secret_key_here
+      - JWT_EXPIRES_IN=1h
+      - JWT_REFRESH_EXPIRES_IN=7d
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - chinese-odyssey-network
+    command: npm run start:dev
+
+networks:
+  chinese-odyssey-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
